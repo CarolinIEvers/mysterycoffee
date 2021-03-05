@@ -3,7 +3,7 @@ import random
 import sys
 import copy
 
-def fetch_and_pair_participants(max_group_size: int):
+def fetch_and_pair_participants(max_group_size=2):
 
     #will change, using gspread to fetch participants and old pairings from Google Spreadsheet
     participants = list(set(pd.read_csv("participants.csv")['email']))
@@ -47,7 +47,6 @@ def fetch_and_pair_participants(max_group_size: int):
                     new_pairings.add(tuple(sorted(sample)))
                     for person in sample:
                         copy_participants.remove(person)
-
                 except ValueError:
                     #remaining individuals < group_size, so just put the remaining people in the same group
                     remaining_individuals = tuple(sorted(copy_participants)) 

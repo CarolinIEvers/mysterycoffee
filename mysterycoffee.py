@@ -5,6 +5,7 @@ import numpy as np
 import random
 import copy
 import sys
+import argparse
 
 
 def fetch_and_pair_participants(max_group_size=2):
@@ -17,17 +18,14 @@ def fetch_and_pair_participants(max_group_size=2):
     #fetch data
     gc = gspread.oauth()
     sheet = gc.open("MysteryCoffee")
-    sheet.updated
     participants_df = pd.DataFrame(sheet.worksheet("new_participants").get_all_records())
-    old_pairings_df = pd.DataFrame(sheet.worksheet("old_pairs").get_all_records(head=0, default_blank=None))
-
-    old_pairings = old_pairings_df.values.tolist()
+    old_pairings = pd.DataFrame(sheet.worksheet("old_pairs").get_all_values()).values.tolist()
     del old_pairings[0]
+    old_pairings_noblanks = []
     for pair in old_pairings:
-        for person in pair:
-            if person is None:
-                pair.remove(person)
-    old_pairings = set([tuple(pair) for pair in old_pairings])
+        new_pair = tuple(filter(lambda x: x != '', pair))
+        old_pairings_noblanks.append(new_pair)
+    old_pairings = set(old_pairings_noblanks)
     participants = list(set(participants_df['Email']))
     if len(participants) <= 1:
         sys.exit("No or only 1 participant.")
@@ -37,9 +35,9 @@ def fetch_and_pair_participants(max_group_size=2):
         (participants[1], participants[0]) in old_pairings:
             sys.exit("Only two individuals signed up and both were already matched once before.")
 
-    # assign new pairs
+    #assign new pairs
     copy_participants = copy.deepcopy(participants)
-    new_pairings = set()
+    new_pairings = set() 
     tries = 0
     while tries < 1000000:
 
@@ -72,24 +70,35 @@ def fetch_and_pair_participants(max_group_size=2):
                     new_pairings.add(remaining_individuals)
                     del copy_participants[:]
 
-        if new_pairings.isdisjoint(old_pairings):
-            break
-        else:
+        #avoids redundancy in groups: if a group member was already in a pair/group with
+        #another member, they will not be a pair/in the same group again.
+        #can be omitted
+        class NotUniqueGroup(Exception): pass
+        try:
+            for new_pair in new_pairings:
+                for old_pair in old_pairings:
+                    if len(set(new_pair).intersection(set(old_pair))) > 1:
+                        raise NotUniqueGroup
+        except NotUniqueGroup:
             tries += 1
             new_pairings.clear()
             copy_participants = copy.deepcopy(participants)
+            continue
 
+        break
+
+    print('\n', old_pairings, '\n')
     print('\n', new_pairings)
 
     for pair in new_pairings:
         sheet.worksheet("old_pairs").append_row(pair)
 
-    #clear the participants worksheet brute force fix
+    #clear the participants worksheet brute force fix (.clear() also clears form headers)
     # sheet.sheet1.resize(rows=2)
     # sheet.sheet1.resize(rows=1000)
     # sheet.sheet1.delete_row(2)
   
-    #return also the participants pandas dataframe, for use in email function
+    #return also the participants_df pandas dataframe, for use in email function
     # return new_pairings, participants_df
 
 
@@ -125,8 +134,14 @@ def email_participants(pairings):
 
 def main():
 
-    fetch_and_pair_participants(max_group_size=3)
-    pass
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-group_size', '--group_size', type=int, required=True, help='Desired group size (range 2-5).')
+    args = parser.parse_args()
+
+    if not 1 < args.group_size < 6:
+        sys.exit("Choose a group size between 2-5.")
+
+    fetch_and_pair_participants(max_group_size=args.group_size)
 
 
 

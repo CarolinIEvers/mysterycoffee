@@ -1,11 +1,12 @@
 import gspread
-import requests
 import pandas as pd
 import numpy as np
 import random
 import copy
 import sys
 import argparse
+import requests
+from bs4 import BeautifulSoup
 
 
 def fetch_and_pair_participants(max_group_size=2):
@@ -71,8 +72,7 @@ def fetch_and_pair_participants(max_group_size=2):
                     del copy_participants[:]
 
         #avoids redundancy in groups: if a group member was already in a pair/group with
-        #another member, they will not be a pair/in the same group again.
-        #can be omitted
+        #another member, they will not be a pair/in the same group again. Can be omitted.
         class NotUniqueGroup(Exception): pass
         try:
             for new_pair in new_pairings:
@@ -93,13 +93,13 @@ def fetch_and_pair_participants(max_group_size=2):
     for pair in new_pairings:
         sheet.worksheet("old_pairs").append_row(pair)
 
-    #clear the participants worksheet brute force fix (.clear() also clears form headers)
+    #clear the participants worksheet brute force fix (.clear() irreversibly clears form headers)
     # sheet.sheet1.resize(rows=2)
     # sheet.sheet1.resize(rows=1000)
     # sheet.sheet1.delete_row(2)
   
     #return also the participants_df pandas dataframe, for use in email function
-    # return new_pairings, participants_df
+    return new_pairings, participants_df
 
 
 def fetch_conversation_starter():
@@ -108,7 +108,17 @@ def fetch_conversation_starter():
     Fetch a conversation starter from Conversationstarter.com
     """
 
-    pass
+    url = 'https://www.conversationstarters.com/generator.php'
+
+    try:
+        response = requests.get(url)
+        html_content = response.content
+        soup = BeautifulSoup(html_content, 'html.parser')
+        question = soup.find_all(text=True)[22].strip()
+        return question
+
+    except Exception as e:
+        print("Error occurred fetching conversation starter: ", '\n', e)
 
 
 def email_participants(pairings):
@@ -124,6 +134,8 @@ def email_participants(pairings):
     #pairings[1] = dataframe with the names and emails (look-up table)
     #loop over new_pairings en check participants_df for names, call fetch_conversation
     #starter method and send email
+
+    # fetch_conversation_starter()
 
     pass
 
@@ -141,8 +153,8 @@ def main():
     if not 1 < args.group_size < 6:
         sys.exit("Choose a group size between 2-5.")
 
-    fetch_and_pair_participants(max_group_size=args.group_size)
-
+    new_pairings = fetch_and_pair_participants(max_group_size=args.group_size)
+    email_participants(new_pairings)
 
 
 if __name__ == '__main__':

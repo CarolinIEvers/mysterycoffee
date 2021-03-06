@@ -137,10 +137,8 @@ def email_participants(pairings, dataframe):
 
     """
 
-    #pairings[0] = new pairings 
-    #pairings[1] = dataframe with the names and emails (look-up table for names)
     pairings = list(pairings)
-    df = dataframe
+    df = dataframe #df with names and emails
 
     with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
         smtp.ehlo()

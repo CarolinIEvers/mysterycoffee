@@ -7,6 +7,12 @@ import sys
 import argparse
 import requests
 from bs4 import BeautifulSoup
+import smtplib
+import config
+
+
+EMAIL_USERNAME = config.email_username
+EMAIL_PASSWORD = config.email_password
 
 
 def fetch_and_pair_participants(max_group_size=2):
@@ -71,8 +77,8 @@ def fetch_and_pair_participants(max_group_size=2):
                     new_pairings.add(remaining_individuals)
                     del copy_participants[:]
 
-        #avoids redundancy in groups: if a group member was already in a pair/group with
-        #another member, they will not be a pair/in the same group again. Can be omitted.
+        #avoids redundancy in groups: if an individual was already in a pair/group with
+        #another individual, they will not be a pair/in the same group again. Can be omitted.
         class NotUniqueGroup(Exception): pass
         try:
             for new_pair in new_pairings:
@@ -121,7 +127,7 @@ def fetch_conversation_starter():
         print("Error occurred fetching conversation starter: ", '\n', e)
 
 
-def email_participants(pairings):
+def email_participants(pairings, dataframe):
     
     """
     To send out emails for example every Monday at 12:00, set up a cronjob (Linux)
@@ -130,18 +136,47 @@ def email_participants(pairings):
         '0 12 * * 1 python3 /path/to/mysterycoffee.py'
 
     """
-    #pairings[0] = actual pairings 
-    #pairings[1] = dataframe with the names and emails (look-up table)
-    #loop over new_pairings en check participants_df for names, call fetch_conversation
-    #starter method and send email
 
-    # fetch_conversation_starter()
+    #pairings[0] = new pairings 
+    #pairings[1] = dataframe with the names and emails (look-up table for names)
+    pairings = list(pairings)
+    df = dataframe
 
-    pass
+    with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.ehlo() 
+        smtp.login(EMAIL_USERNAME, EMAIL_PASSWORD)
 
+        #loops over new pairings en checks for names, calls fetch_conversation_starter 
+        #method and finally sends email to all participants
+        subject = 'Mystery Coffee'
+        for pair in pairings:
+            conversation_starter = fetch_conversation_starter()
+            pair = list(pair)
+            pair = df[df['Email'].isin(pair)][['Name', 'Email']].values.tolist()
+            tmp = copy.deepcopy(pair)
+            for person in pair:
+                person_name = person[0]
+                person_mail = person[1]
+                tmp.remove(person)
+                names = []
+                mails = []
+                for name, email in tmp:
+                    names.append(name)
+                    mails.append(email)
+                recipients = [names, mails]
+                recipients_names = ', '.join(recipients[0])
+                recipients_emails = ', '.join(recipients[1])
+                body = f"Hi {person_name},\n\nYour partner(s) for the Mystery Coffee " \
+                f"of this week: {recipients_names}.\n\n" \
+                f"Conversation starter: {conversation_starter}\n\n" \
+                f"Their email(s):\n{recipients_emails}" 
 
+                msg = f'Subject: {subject}\n\n{body}'
+                smtp.sendmail(EMAIL_USERNAME, person_mail, msg)
 
-
+                tmp = copy.deepcopy(pair)
 
 
 def main():
@@ -153,8 +188,8 @@ def main():
     if not 1 < args.group_size < 6:
         sys.exit("Choose a group size between 2-5.")
 
-    new_pairings = fetch_and_pair_participants(max_group_size=args.group_size)
-    email_participants(new_pairings)
+    new_pairings, dataframe = fetch_and_pair_participants(max_group_size=args.group_size)
+    email_participants(new_pairings, dataframe)
 
 
 if __name__ == '__main__':

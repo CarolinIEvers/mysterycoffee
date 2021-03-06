@@ -1,3 +1,5 @@
+__pycache__/
 .vscode/
 proj2/
 credentials.json
+config.py

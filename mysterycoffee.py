@@ -163,13 +163,12 @@ def email_participants(pairings, dataframe):
                 for name, email in tmp:
                     names.append(name)
                     mails.append(email)
-                members = [names, mails]
-                members_names = ', '.join(members[0])
-                members_emails = ', '.join(members[1])
+                names_joint = ', '.join(names)
+                emails_joint = ', '.join(mails)
                 body = f"Hi {recipient_name},\n\nYour partner(s) for the Mystery Coffee " \
-                f"of this week: {members_names}.\n\n" \
+                f"of this week: {names_joint}.\n\n" \
                 f"Conversation starter: {conversation_starter}\n\n" \
-                f"Their email(s):\n{members_emails}" 
+                f"Their email(s):\n{emails_joint}" 
 
                 msg = f'Subject: {subject}\n\n{body}'
                 smtp.sendmail(EMAIL_USERNAME, recipient_mail, msg)

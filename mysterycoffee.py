@@ -155,24 +155,24 @@ def email_participants(pairings, dataframe):
             pair = df[df['Email'].isin(pair)][['Name', 'Email']].values.tolist()
             tmp = copy.deepcopy(pair)
             for person in pair:
-                person_name = person[0]
-                person_mail = person[1]
+                recipient_name = person[0]
+                recipient_mail = person[1]
                 tmp.remove(person)
                 names = []
                 mails = []
                 for name, email in tmp:
                     names.append(name)
                     mails.append(email)
-                recipients = [names, mails]
-                recipients_names = ', '.join(recipients[0])
-                recipients_emails = ', '.join(recipients[1])
-                body = f"Hi {person_name},\n\nYour partner(s) for the Mystery Coffee " \
-                f"of this week: {recipients_names}.\n\n" \
+                members = [names, mails]
+                members_names = ', '.join(members[0])
+                members_emails = ', '.join(members[1])
+                body = f"Hi {recipient_name},\n\nYour partner(s) for the Mystery Coffee " \
+                f"of this week: {members_names}.\n\n" \
                 f"Conversation starter: {conversation_starter}\n\n" \
-                f"Their email(s):\n{recipients_emails}" 
+                f"Their email(s):\n{members_emails}" 
 
                 msg = f'Subject: {subject}\n\n{body}'
-                smtp.sendmail(EMAIL_USERNAME, person_mail, msg)
+                smtp.sendmail(EMAIL_USERNAME, recipient_mail, msg)
 
                 tmp = copy.deepcopy(pair)
 

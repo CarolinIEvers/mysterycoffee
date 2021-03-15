@@ -100,9 +100,9 @@ def fetch_and_pair_participants(max_group_size=2):
         sheet.worksheet("old_pairs").append_row(pair)
 
     #clear the participants worksheet brute force fix (.clear() irreversibly clears form headers)
-    # sheet.sheet1.resize(rows=2)
-    # sheet.sheet1.resize(rows=1000)
-    # sheet.sheet1.delete_row(2)
+    sheet.sheet1.resize(rows=2)
+    sheet.sheet1.resize(rows=1000)
+    sheet.sheet1.delete_row(2)
   
     #return also the participants_df pandas dataframe, for use in email function
     return new_pairings, participants_df
@@ -118,13 +118,12 @@ def fetch_conversation_starter():
 
     try:
         response = requests.get(url)
-        html_content = response.content
+        html_content = response.text
         soup = BeautifulSoup(html_content, 'html.parser')
-        question = soup.find_all(text=True)[22].strip()
-        return question
-
+        conv_starter = soup.find_all(text=True)[22].strip()
+        return conv_starter
     except Exception as e:
-        print("Error occurred fetching conversation starter: ", '\n', e)
+        print("Error occurred fetching conversation starter:\n", e)
 
 
 def email_participants(pairings, dataframe):

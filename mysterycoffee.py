@@ -59,12 +59,10 @@ def fetch_and_pair_participants(max_group_size=2):
                 new_pairings.remove(random_group)
                 new_pairings.add(new_group)
                 del copy_participants[0]
-
             elif len(copy_participants) == 2:
                 #pair these two remaining persons
                 new_pairings.add(tuple(sorted(copy_participants)))
                 del copy_participants[:]
-
             else:
                 try:
                     sample = random.sample(copy_participants, group_size)
